@@ -1,6 +1,5 @@
 import { useState, useMemo, useCallback, FC, useRef } from 'react';
-
-import { FileText, Settings, Cpu, ListOrdered, Star, Loader2, AlertCircle, Wand2, X } from 'lucide-react';
+import { FileText, Settings, Cpu, ListOrdered, Star, AlertCircle, Wand2, X } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -110,7 +109,7 @@ const computeScore = (combo: IsogramEntry[]): number => {
 
 // --- UI COMPONENTS ---
 
-const SettingsSlider: FC<{ label: string; value: number; min: number; max: number; step?: number; onChange: (val: number) => void; unit?: string; help?: string; }> = 
+const SettingsSlider: FC<{ label: string; value: number; min: number; max: number; step?: number; onChange: (val: number) => void; unit?: string; help?: string; }> =
 ({ label, value, min, max, step = 1, onChange, unit = '', help }) => (
   <div className="space-y-2">
     <label className="flex justify-between items-center text-sm font-medium text-slate-700">
@@ -131,7 +130,7 @@ const SettingsSlider: FC<{ label: string; value: number; min: number; max: numbe
 );
 
 const SolutionCard: FC<{ solution: Solution; rank: number }> = ({ solution, rank }) => (
-  <div className="bg-gradient-to-r from-indigo-50 to-white p-4 rounded-xl border border-indigo-200 shadow-sm hover:shadow-lg transition-shadow duration-300">
+  <div className="w-full bg-gradient-to-r from-indigo-50 to-white p-4 rounded-xl border border-indigo-200 shadow-sm hover:shadow-lg transition-shadow duration-300">
     <div className="flex justify-between items-start">
       <p className="text-lg font-semibold text-indigo-900 break-words">
         <span className="inline-block bg-indigo-600 text-white text-xs font-bold px-2 py-0.5 rounded-full mr-3 select-none">#{rank}</span>
@@ -209,7 +208,7 @@ mut`
   );
   const [settings, setSettings] = useState<SearchSettings>({
     minLen: 10,
-    maxLen: 0, // 0 for unlimited
+    maxLen: 0,
     topN: 10,
     searchMode: 'classic',
     startSize: 40,
@@ -218,7 +217,7 @@ mut`
   const [results, setResults] = useState<Solution[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const searchControllerRef = useRef<AbortController | null>(null);
-  const allSolutionsRef = useRef<Solution[]>([]); // Use ref to accumulate all solutions
+  const allSolutionsRef = useRef<Solution[]>([]);
   const [progress, setProgress] = useState<ProgressState>({ longest: null, bestScore: null, solutionsFound: 0, wordsScanned: 0 });
   const [activeTab, setActiveTab] = useState<'score' | 'length'>('score');
   const [error, setError] = useState<string | null>(null);
@@ -289,8 +288,6 @@ mut`
   };
 
   const handlePrepareWordlist = useCallback(() => {
-    // Split by any character that is NOT a letter (a-z, A-Z, ä, ö, ü, ß)
-    // This will effectively split by spaces, numbers, punctuation, etc.
     const rawWords = wordListInput.split(/[^a-zA-ZäöüÄÖÜß]+/).map(w => w.trim()).filter(Boolean);
     const uniqueIsograms = new Set<string>();
 
@@ -304,7 +301,7 @@ mut`
     const sortedIsograms = Array.from(uniqueIsograms).sort((a, b) => b.length - a.length);
     setWordListInput(sortedIsograms.join('\n'));
     setMessage(`Prepared wordlist: ${sortedIsograms.length} unique isograms found.`);
-    setTimeout(() => setMessage(null), 3000); // Clear message after 3 seconds
+    setTimeout(() => setMessage(null), 3000);
   }, [wordListInput]);
 
   const parsedEntries = useMemo<IsogramEntry[]>(() => {
@@ -313,7 +310,7 @@ mut`
     for (const line of lines) {
       const chars = [...line];
       const uniqueChars = new Set(chars);
-      if (chars.length === uniqueChars.size) { // It's an isogram
+      if (chars.length === uniqueChars.size) {
         entries.push({
           word: line,
           length: chars.length,
@@ -340,32 +337,14 @@ mut`
     const { signal } = controller;
 
     const { minLen, maxLen, searchMode, startSize, fillSize } = settings;
-    // let allSolutions: Solution[] = []; // This was the problem, it was a local variable
-    allSolutionsRef.current = []; // Reset for new search
-    let currentMaxLen = 0; // This can remain local to handleSearch
+    allSolutionsRef.current = [];
     let progressState: ProgressState = { longest: null, bestScore: null, solutionsFound: 0, wordsScanned: 0 };
 
-    const updateProgress = (candidate: Solution) => {
-        let changed = false;
-        if (!progressState.longest || candidate.len > progressState.longest.len) {
-            progressState.longest = candidate;
-            changed = true;
-        }
-        if (!progressState.bestScore || candidate.score > progressState.bestScore.score) {
-            progressState.bestScore = candidate;
-            changed = true;
-        }
-        if (changed) {
-            setProgress({...progressState});
-        }
-    };
-
     const backtrack = async (list: IsogramEntry[], index: number, currentCombo: IsogramEntry[], currentChars: Set<string>, currentLen: number) => {
-      if (signal.aborted) return; // Check for cancellation
+      if (signal.aborted) return;
 
       if (progressState.wordsScanned++ % 5000 === 0) {
-        setProgress({...progressState});
-        // Update results periodically
+        setProgress({ ...progressState });
         const currentSortedResults = [...allSolutionsRef.current].sort((a, b) => b.score - a.score || b.len - a.len);
         setResults(currentSortedResults.slice(0, settings.topN));
         await new Promise(resolve => setTimeout(resolve, 0));
@@ -374,34 +353,30 @@ mut`
       if (currentCombo.length > 0 && currentLen >= minLen && (maxLen === 0 || currentLen <= maxLen)) {
         const score = computeScore(currentCombo);
         const candidate: Solution = { words: [...currentCombo], len: currentLen, score };
-        
-        // Accumulate all valid candidates
+
         allSolutionsRef.current.push(candidate);
 
-        // Update results immediately when a new candidate is found
         const currentSortedResults = [...allSolutionsRef.current].sort((a, b) => b.score - a.score || b.len - a.len);
         setResults(currentSortedResults.slice(0, settings.topN));
 
-        // Update progress periodically
-        if (progressState.wordsScanned % 5000 === 0) { // Throttle updates
-            setProgress({...progressState}); // Update progress display
-            await new Promise(resolve => setTimeout(resolve, 0)); // Yield control
+        if (progressState.wordsScanned % 5000 === 0) {
+          setProgress({ ...progressState });
+          await new Promise(resolve => setTimeout(resolve, 0));
         }
 
-        // Update longest/bestScore for progress display
         if (!progressState.longest || candidate.len > progressState.longest.len) {
-            progressState.longest = candidate;
+          progressState.longest = candidate;
         }
         if (!progressState.bestScore || candidate.score > progressState.bestScore.score) {
-            progressState.bestScore = candidate;
+          progressState.bestScore = candidate;
         }
-        progressState.solutionsFound = allSolutionsRef.current.length; // Update total solutions found
+        progressState.solutionsFound = allSolutionsRef.current.length;
       }
 
       if (maxLen > 0 && currentLen >= maxLen) return;
 
       for (let i = index; i < list.length; i++) {
-        if (signal.aborted) return; // Check for cancellation inside loop
+        if (signal.aborted) return;
 
         const nextWord = list[i];
         let hasConflict = false;
@@ -415,7 +390,7 @@ mut`
         if (!hasConflict) {
           currentCombo.push(nextWord);
           for (const char of nextWord.chars) currentChars.add(char);
-          progressState.wordsScanned++; // Increment here for more accurate count
+          progressState.wordsScanned++;
           await backtrack(list, i + 1, currentCombo, currentChars, currentLen + nextWord.length);
           for (const char of nextWord.chars) currentChars.delete(char);
           currentCombo.pop();
@@ -424,34 +399,33 @@ mut`
     };
 
     try {
-        if (searchMode === 'classic') {
-            await backtrack(parsedEntries, 0, [], new Set(), 0);
-        } else {
-            const startEntries = parsedEntries.slice(0, Math.min(startSize, parsedEntries.length));
-            const fillEntries = parsedEntries.slice(0, Math.min(fillSize, parsedEntries.length));
+      if (searchMode === 'classic') {
+        await backtrack(parsedEntries, 0, [], new Set(), 0);
+      } else {
+        const startEntries = parsedEntries.slice(0, Math.min(startSize, parsedEntries.length));
+        const fillEntries = parsedEntries.slice(0, Math.min(fillSize, parsedEntries.length));
 
-            for (const startWord of startEntries) {
-                if (signal.aborted) break; // Check for cancellation before starting new branch
-                const initialCombo = [startWord];
-                const initialChars = new Set(startWord.chars);
-                const initialLen = startWord.length;
-                await backtrack(fillEntries, 0, initialCombo, initialChars, initialLen);
-            }
+        for (const startWord of startEntries) {
+          if (signal.aborted) break;
+          const initialCombo = [startWord];
+          const initialChars = new Set(startWord.chars);
+          const initialLen = startWord.length;
+          await backtrack(fillEntries, 0, initialCombo, initialChars, initialLen);
         }
+      }
     } catch (e) {
-        if (signal.aborted) {
-            setMessage('Search cancelled.');
-        } else {
-            setError(e instanceof Error ? e.message : 'An unknown error occurred.');
-        }
+      if (signal.aborted) {
+        setMessage('Search cancelled.');
+      } else {
+        setError(e instanceof Error ? e.message : 'An unknown error occurred.');
+      }
     } finally {
-        // Final update of results after search completes
-        const finalSortedResults = [...allSolutionsRef.current].sort((a, b) => b.score - a.score || b.len - a.len);
-        setResults(finalSortedResults.slice(0, settings.topN));
-        setIsSearching(false);
-        searchControllerRef.current = null; // Clear controller
+      const finalSortedResults = [...allSolutionsRef.current].sort((a, b) => b.score - a.score || b.len - a.len);
+      setResults(finalSortedResults.slice(0, settings.topN));
+      setIsSearching(false);
+      searchControllerRef.current = null;
     }
-  }, [isSearching, settings, parsedEntries]); // Dependencies
+  }, [isSearching, settings, parsedEntries]);
 
   const handleCancelSearch = useCallback(() => {
     searchControllerRef.current?.abort();
@@ -478,8 +452,6 @@ mut`
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           {/* Left Column: Controls */}
           <div className="lg:col-span-2 space-y-8">
-            
-
             <div className="bg-white p-6 rounded-2xl border border-indigo-200 shadow-md">
               <h2 className="flex items-center text-xl font-bold text-indigo-900 mb-4">
                 <FileText className="w-6 h-6 mr-3 text-indigo-600" />
@@ -515,6 +487,7 @@ mut`
                   >
                     Prepare Wordlist
                   </button>
+                </div>
               </div>
             </div>
 
@@ -529,54 +502,54 @@ mut`
                 <SettingsSlider label="Top N Results" value={settings.topN} min={0} max={50} onChange={val => setSettings(s => ({...s, topN: val}))} help="0 for all" />
                 
                 <div>
-                    <label className="text-sm font-medium text-indigo-700">Search Mode</label>
-                    <div className="mt-2 grid grid-cols-2 gap-2 rounded-lg bg-indigo-100 p-1">
-                        <button
-                          onClick={() => setSettings(s => ({...s, searchMode: 'classic'}))}
-                          className={cn(
-                            'px-3 py-1.5 text-sm font-semibold rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-400',
-                            settings.searchMode === 'classic'
-                              ? 'bg-white text-indigo-700 shadow-md'
-                              : 'text-indigo-500 hover:bg-indigo-200'
-                          )}
-                        >Classic</button>
-                        <button
-                          onClick={() => setSettings(s => ({...s, searchMode: 'split'}))}
-                          className={cn(
-                            'px-3 py-1.5 text-sm font-semibold rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-400',
-                            settings.searchMode === 'split'
-                              ? 'bg-white text-indigo-700 shadow-md'
-                              : 'text-indigo-500 hover:bg-indigo-200'
-                          )}
-                        >Split</button>
-                    </div>
+                  <label className="text-sm font-medium text-indigo-700">Search Mode</label>
+                  <div className="mt-2 grid grid-cols-2 gap-2 rounded-lg bg-indigo-100 p-1">
+                    <button
+                      onClick={() => setSettings(s => ({...s, searchMode: 'classic'}))}
+                      className={cn(
+                        'px-3 py-1.5 text-sm font-semibold rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-400',
+                        settings.searchMode === 'classic'
+                          ? 'bg-white text-indigo-700 shadow-md'
+                          : 'text-indigo-500 hover:bg-indigo-200'
+                      )}
+                    >Classic</button>
+                    <button
+                      onClick={() => setSettings(s => ({...s, searchMode: 'split'}))}
+                      className={cn(
+                        'px-3 py-1.5 text-sm font-semibold rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-400',
+                        settings.searchMode === 'split'
+                          ? 'bg-white text-indigo-700 shadow-md'
+                          : 'text-indigo-500 hover:bg-indigo-200'
+                      )}
+                    >Split</button>
+                  </div>
                 </div>
                 <div className="mt-6">
-                    {!isSearching ? (
-                        <button
-                            onClick={handleSearch}
-                            disabled={parsedEntries.length === 0}
-                            className="w-full flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                            <Wand2 className="w-5 h-5 mr-3" />
-                            Find Isograms
-                        </button>
-                    ) : (
-                        <button
-                            onClick={handleCancelSearch}
-                            className="w-full flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
-                        >
-                            <X className="w-5 h-5 mr-3" />
-                            Cancel Search
-                        </button>
-                    )}
+                  {!isSearching ? (
+                    <button
+                      onClick={handleSearch}
+                      disabled={parsedEntries.length === 0}
+                      className="w-full flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <Wand2 className="w-5 h-5 mr-3" />
+                      Find Isograms
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleCancelSearch}
+                      className="w-full flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                    >
+                      <X className="w-5 h-5 mr-3" />
+                      Cancel Search
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
           </div>
 
           {/* Right Column: Results */}
-          <div className="lg:col-span-3 flex flex-col">
+          <div className="lg:col-span-3 flex flex-col space-y-6 [&>*]:w-full">
             {/* Error and Message displays - always visible at the top */}
             {error && (
               <div className="relative flex items-center gap-4 bg-red-100 border-l-4 border-red-600 text-red-800 p-4 rounded-r-xl mb-6">
@@ -612,82 +585,78 @@ mut`
               </div>
             )}
 
-            {/* Main content area (progress, results, or empty state) */}
-            <div className="flex flex-col space-y-6 h-full">
-              {isSearching && (
-                <div className="bg-white p-6 rounded-2xl border border-indigo-200 shadow-md mb-6">
-                  <div className="flex items-center text-xl font-bold text-indigo-900 mb-4">
-                    <Cpu className="w-6 h-6 mr-3 text-indigo-600 animate-pulse" />
-                    Search in Progress...
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                    <div className="bg-indigo-100 p-4 rounded-xl shadow-inner">
-                      <p className="text-indigo-600 font-semibold">Longest Found</p>
-                      <p className="font-semibold text-indigo-800 truncate mt-1" title={progress.longest ? progress.longest.words.map(w => w.word).join(' + ') : undefined}>
-                        {progress.longest ? `${progress.longest.words.map(w=>w.word).join('')} (${progress.longest.len})` : 'N/A'}
-                      </p>
-                    </div>
-                    <div className="bg-indigo-100 p-4 rounded-xl shadow-inner">
-                      <p className="text-indigo-600 font-semibold">Best Score</p>
-                      <p className="font-semibold text-indigo-800 truncate mt-1" title={progress.bestScore ? progress.bestScore.words.map(w => w.word).join(' + ') : undefined}>
-                        {progress.bestScore ? `${progress.bestScore.words.map(w=>w.word).join('')} (${progress.bestScore.score.toFixed(2)})` : 'N/A'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-4 text-center text-xs text-indigo-500">Scanned {progress.wordsScanned.toLocaleString()} combinations... Found {progress.solutionsFound} candidates.</div>
+            {isSearching && (
+              <div className="bg-white p-6 rounded-2xl border border-indigo-200 shadow-md mb-6">
+                <div className="flex items-center text-xl font-bold text-indigo-900 mb-4">
+                  <Cpu className="w-6 h-6 mr-3 text-indigo-600 animate-pulse" />
+                  Search in Progress...
                 </div>
-              )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                  <div className="bg-indigo-100 p-4 rounded-xl shadow-inner">
+                    <p className="text-indigo-600 font-semibold">Longest Found</p>
+                    <p className="font-semibold text-indigo-800 truncate mt-1" title={progress.longest ? progress.longest.words.map(w => w.word).join(' + ') : undefined}>
+                      {progress.longest ? `${progress.longest.words.map(w=>w.word).join('')} (${progress.longest.len})` : 'N/A'}
+                    </p>
+                  </div>
+                  <div className="bg-indigo-100 p-4 rounded-xl shadow-inner">
+                    <p className="text-indigo-600 font-semibold">Best Score</p>
+                    <p className="font-semibold text-indigo-800 truncate mt-1" title={progress.bestScore ? progress.bestScore.words.map(w => w.word).join(' + ') : undefined}>
+                      {progress.bestScore ? `${progress.bestScore.words.map(w=>w.word).join('')} (${progress.bestScore.score.toFixed(2)})` : 'N/A'}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-4 text-center text-xs text-indigo-500">Scanned {progress.wordsScanned.toLocaleString()} combinations... Found {progress.solutionsFound} candidates.</div>
+              </div>
+            )}
 
-              {results.length > 0 && (
-                <>
-                  <div>
-                      <div className="flex border-b border-indigo-200">
-                          <button
-                            onClick={() => setActiveTab('score')}
-                            className={cn(
-                              'flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-colors border-b-4 -mb-px cursor-pointer select-none focus:outline-none focus:ring-2 focus:ring-indigo-400',
-                              activeTab === 'score'
-                                ? 'border-indigo-600 text-indigo-700'
-                                : 'border-transparent text-indigo-500 hover:text-indigo-700'
-                            )}
-                          >
-                              <Star className="w-4 h-4" /> Top by Score
-                          </button>
-                          <button
-                            onClick={() => setActiveTab('length')}
-                            className={cn(
-                              'flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-colors border-b-4 -mb-px cursor-pointer select-none focus:outline-none focus:ring-2 focus:ring-indigo-400',
-                              activeTab === 'length'
-                                ? 'border-indigo-600 text-indigo-700'
-                                : 'border-transparent text-indigo-500 hover:text-indigo-700'
-                            )}
-                          >
-                              <ListOrdered className="w-4 h-4" /> Top by Length
-                          </button>
-                      </div>
+            {results.length > 0 && (
+              <>
+                <div>
+                  <div className="flex border-b border-indigo-200">
+                    <button
+                      onClick={() => setActiveTab('score')}
+                      className={cn(
+                        'flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-colors border-b-4 -mb-px cursor-pointer select-none focus:outline-none focus:ring-2 focus:ring-indigo-400',
+                        activeTab === 'score'
+                          ? 'border-indigo-600 text-indigo-700'
+                          : 'border-transparent text-indigo-500 hover:text-indigo-700'
+                      )}
+                    >
+                      <Star className="w-4 h-4" /> Top by Score
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('length')}
+                      className={cn(
+                        'flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-colors border-b-4 -mb-px cursor-pointer select-none focus:outline-none focus:ring-2 focus:ring-indigo-400',
+                        activeTab === 'length'
+                          ? 'border-indigo-600 text-indigo-700'
+                          : 'border-transparent text-indigo-500 hover:text-indigo-700'
+                      )}
+                    >
+                      <ListOrdered className="w-4 h-4" /> Top by Length
+                    </button>
                   </div>
-                  <div className="space-y-5">
-                      {displayedResults.map((sol, i) => (
-                          <SolutionCard key={sol.words.map(w=>w.word).join('-')} solution={sol} rank={i + 1} />
-                      ))}
-                  </div>
-                </>
-              )}
+                </div>
+                <div className="space-y-5">
+                  {displayedResults.map((sol, i) => (
+                    <SolutionCard key={sol.words.map(w=>w.word).join('-')} solution={sol} rank={i + 1} />
+                  ))}
+                </div>
+              </>
+            )}
 
-              {!isSearching && results.length === 0 && !error && !message && (
-                  <div className="flex flex-col items-center justify-center text-center bg-white p-12 rounded-2xl border-2 border-dashed border-indigo-300 h-full">
-                      <div className="bg-indigo-100 p-6 rounded-full">
-                          <ListOrdered className="w-14 h-14 text-indigo-600" />
-                      </div>
-                      <h3 className="mt-8 text-2xl font-semibold text-indigo-900">Results will appear here</h3>
-                      <p className="mt-3 max-w-md text-indigo-600">Configure your search and click <span className="font-semibold">"Find Isograms"</span> to begin exploring unique word combinations.</p>
-                  </div>
-              )}
-            </div>
-          </div>
+            {!isSearching && results.length === 0 && !error && !message && (
+              <div className="flex flex-col items-center justify-center text-center bg-white p-12 rounded-2xl border-2 border-dashed border-indigo-300">
+                <div className="bg-indigo-100 p-6 rounded-full">
+                  <ListOrdered className="w-14 h-14 text-indigo-600" />
+                </div>
+                <h3 className="mt-8 text-2xl font-semibold text-indigo-900">Results will appear here</h3>
+                <p className="mt-3 max-w-md text-indigo-600">Configure your search and click <span className="font-semibold">"Find Isograms"</span> to begin exploring unique word combinations.</p>
+              </div>
+            )}
           </div>
         </div>
-    </main>
+      </main>
     </div>
   );
 };
