@@ -41,10 +41,9 @@ type SearchSettings = {
   fillSize: number;
 };
 
-// --- CORE LOGIC (Re-implemented from C++) ---
+// --- CORE LOGIC (Exported for testing) ---
 
-// Helper for UTF-8 aware prefix/suffix
-const getUtf8Slice = (word: string, n: number, fromEnd = false): string => {
+export const getUtf8Slice = (word: string, n: number, fromEnd = false): string => {
   const chars = [...word];
   if (fromEnd) {
     return chars.slice(Math.max(0, chars.length - n)).join('');
@@ -52,14 +51,13 @@ const getUtf8Slice = (word: string, n: number, fromEnd = false): string => {
   return chars.slice(0, n).join('');
 };
 
-// Scoring constants
-const SUFFIXES = [
+export const SUFFIXES = [
     "ung", "keit", "heit", "schaft", "tum", "ion", "ismus", "ist", "ling", "erei",
     "ler", "ner", "chen", "lein", "nis", "sal", "in", "enz", "anz", "or", "ör", "ität", "ment", "age", "ur",
     "tät", "ik", "loge", "iker", "graph", "gramm", "tion", "eur", "eurin", "euren", "ation",
     "logie", "phie", "är", "ärin", "ärchen", "sel", "er", "erin"
 ];
-const PREFIXES = [
+export const PREFIXES = [
     "un", "ver", "be", "ent", "er", "ab", "auf", "aus", "an", "ein", "mit", "nach",
     "über", "um", "unter", "vor", "wider", "zer", "zurück", "zu", "bei", "fort",
     "gegen", "her", "hin", "los", "miss", "wieder", "ur", "voll", "zwischen",
@@ -68,12 +66,11 @@ const PREFIXES = [
     "inter", "infra", "hyper", "para", "mono", "poly", "tri", "multi", "bi", "semi",
     "ko", "kontra", "re", "pseudo", "quasi", "neo", "sozio"
 ];
-
-const LINKING_ELEMENTS = [
+export const LINKING_ELEMENTS = [
     "s", "es", "n", "en", "er", "e"
 ];
 
-const computeScore = (combo: IsogramEntry[]): number => {
+export const computeScore = (combo: IsogramEntry[]): number => {
   let score = 0.0;
   for (let i = 0; i < combo.length; ++i) {
     const w = combo[i];
@@ -86,18 +83,13 @@ const computeScore = (combo: IsogramEntry[]): number => {
       if (prev.suffix3 === w.prefix3) score += 5.0;
       if (SUFFIXES.some(suf => prev.suffix3.endsWith(suf) || prev.suffix2.endsWith(suf))) score += 3.0;
       if (PREFIXES.some(pre => w.prefix3.startsWith(pre) || w.prefix2.startsWith(pre))) score += 5.0;
-
-      // Check for German compound word plausibility with linking elements
       for (const linkingElement of LINKING_ELEMENTS) {
-        // Case 1: Previous word ends with linking element, current word starts with it (e.g., "Haus" + "s" + "Tür")
         if (prev.word.endsWith(linkingElement) && w.word.startsWith(linkingElement)) {
-          score += 4.0; // Strong bonus for explicit linking element
+          score += 4.0;
           break;
         }
-        // Case 2: Previous word ends with linking element, and the current word starts with the *remainder* of the linking element
-        // This handles cases where the linking element is part of the next word's beginning (e.g., "Schwein" + "e" + "braten")
         else if (prev.word.endsWith(linkingElement) && linkingElement.length > 0 && w.word.startsWith(linkingElement.slice(0, w.word.length - prev.word.length + linkingElement.length))) {
-            score += 2.0; // Smaller bonus for partial match
+            score += 2.0;
             break;
         }
       }
@@ -106,6 +98,21 @@ const computeScore = (combo: IsogramEntry[]): number => {
   if (combo.length > 4) score -= (combo.length - 4) * 1.5;
   return score;
 };
+
+export const isIsogram = (word: string): boolean => {
+  const chars = [...word];
+  const uniqueChars = new Set(chars);
+  return chars.length === uniqueChars.size;
+};
+
+export const cleanAndCheckIsogram = (word: string): string | null => {
+  const cleanedWord = word.toLowerCase().replace(/[^a-zäöüß]/g, '').trim();
+  if (cleanedWord.length > 0 && isIsogram(cleanedWord)) {
+    return cleanedWord;
+  }
+  return null;
+};
+
 
 // --- UI COMPONENTS ---
 
@@ -272,20 +279,6 @@ mut`
       }
     }
   }, []);
-
-  const isIsogram = (word: string): boolean => {
-    const chars = [...word];
-    const uniqueChars = new Set(chars);
-    return chars.length === uniqueChars.size;
-  };
-
-  const cleanAndCheckIsogram = (word: string): string | null => {
-    const cleanedWord = word.toLowerCase();
-    if (cleanedWord.length > 0 && isIsogram(cleanedWord)) {
-      return cleanedWord;
-    }
-    return null;
-  };
 
   const handlePrepareWordlist = useCallback(() => {
     const rawWords = wordListInput.split(/[^a-zA-ZäöüÄÖÜß]+/).map(w => w.trim()).filter(Boolean);
