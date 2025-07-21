@@ -4,7 +4,7 @@ import IsogramFinder from './IsogramFinder';
 
 function App() {
   return (
-    <div className="App">
+    <div className="App" role="main">
       <IsogramFinder />
     </div>
   );

@@ -1,46 +1,73 @@
-# Getting Started with Create React App
+# Isogram Finder
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Did you know that in the 1980s, the German Language Society held a competition to find the longest German word in which no letter is repeated? The winning entry was "Heizölrückstoßabdämpfung," a completely made-up word spanning 24 unique letters with no real meaning. This fascinating quest for the perfect isogram—a word with no repeating characters—highlights the playful and creative side of language. This tool allows you to embark on your own hunt for these unique words!
 
-## Available Scripts
+## About This Project
 
-In the project directory, you can run:
+This project provides a simple and intuitive interface to identify isograms. You can upload a text file, and the tool will display all the isograms found within it.
 
-### `npm start`
+## Features
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+*   **Isogram Detection:** Identifies words that do not have repeating letters.
+*   **File Upload:** Supports uploading text files (`.txt`) to search for isograms.
+*   **Clear Results:** Displays the found isograms in a clean and readable list.
+*   **Web-based:** Runs directly in the browser, no installation required.
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+## How It Works
 
-### `npm test`
+The application reads a text file provided by the user, splits the content into words, and then checks each word to see if it's an isogram. A word is identified as an isogram if it contains no repeating letters. The results are then displayed to the user.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Screenshots
 
-### `npm run build`
+*(Please add screenshots of your application here. You can create a `public/images` folder for them, similar to the reference project.)*
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## Setup and Usage
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+To run the project locally, follow these steps:
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/saas-erp-hub/isogram-finder.git
+    cd isogram-finder
+    ```
 
-### `npm run eject`
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+3.  **Start the project:**
+    ```bash
+    npm start
+    ```
+    The project will open in your browser at `http://localhost:3000` (or a similar port).
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Example Wordlist
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+This repository includes `alice.txt`, a file containing all isograms found in the classic story "Alice's Adventures in Wonderland." You can use this file to test the "Load Wordlist From File" feature and see the isogram finder in action right away.
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+## Project Structure
 
-## Learn More
+*   `src/IsogramFinder.tsx`: Contains the core logic for finding and displaying isograms.
+*   `src/App.tsx`: The main application component.
+*   `public/index.html`: The main HTML file for the application.
+*   `package.json`: Defines project metadata and dependencies.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## Future Improvements
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+*   Support for different languages and character sets.
+*   Option to ignore case sensitivity.
+*   Displaying statistics about the found isograms (e.g., longest isogram, number of isograms found).
+*   Export options for the list of isograms.
+
+## License
+
+This project is licensed under the MIT License. See the `LICENSE` file for more details.
+
+## Contact
+
+For questions or feedback, please contact bytebuilder@users.noreply.github.com.
+
+## Acknowledgements
+
+*   [Contributor Covenant](https://www.contributor-covenant.org/) for the Code of Conduct.
