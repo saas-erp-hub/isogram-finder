@@ -39,7 +39,8 @@ describe('Isogram-Finder pure functions', () => {
       expect(cleanAndCheckIsogram('   ')).toBe(null);
     });
     it('should handle German Umlaute', () => {
-      expect(cleanAndCheckIsogram('Heizölrückstoßabdämpfung')).toBe(null); // ö is repeated
+      expect(cleanAndCheckIsogram('Löffelstiel')).toBe(null); // l, f, e are repeated
+      expect(cleanAndCheckIsogram('Heizölrückstoßabdämpfung')).toBe('heizölrückstoßabdämpfung');
       expect(cleanAndCheckIsogram('Faß')).toBe('faß');
     });
   });

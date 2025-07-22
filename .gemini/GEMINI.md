@@ -43,13 +43,18 @@ This document contains critical information about working with this codebase. Fo
 
 ## System Architecture
 
-The project is a client-side single-page application (SPA) built with React and TypeScript.
+The project is a client-side single-page application (SPA) built with React and TypeScript. It offloads all performance-intensive computations to a Web Worker to ensure the UI remains responsive.
 
--   **Frontend:** A React application responsible for the user interface and all application logic.
+-   **Frontend:** A React application responsible for the user interface and state management. It sends search commands to the worker and displays the results it receives.
+-   **Web Worker (`src/search.worker.ts`):** The computational core of the application. It handles all heavy logic, including:
+    -   Parsing and cleaning the raw wordlist.
+    -   The backtracking algorithm for finding isogram combinations.
+    -   Scoring the found solutions.
+    -   Sending throttled progress and result updates back to the main thread.
 -   **Core Components:**
-    -   `src/IsogramFinder.tsx`: The core component for the isogram finding logic.
-    -   `src/App.tsx`: The main application component that orchestrates the UI.
-    -   `src/App.test.tsx`: Tests for the main application component.
+    -   `src/IsogramFinder.tsx`: The main UI component that manages user input, settings, and the display of search results. It communicates with the Web Worker.
+    -   `src/App.tsx`: The root application component.
+    -   `src/worker-loader.ts`: A helper to abstract the creation of the web worker.
 
 ## Pull Requests
 
