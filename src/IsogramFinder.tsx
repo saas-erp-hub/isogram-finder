@@ -421,14 +421,21 @@ mut`
   }, [isSearching, settings, parsedEntries]);
 
   const handleCancelSearch = useCallback(() => {
-    searchControllerRef.current?.abort();
+    if (searchControllerRef.current) {
+      searchControllerRef.current.abort();
+    }
+    setIsSearching(false);
+    setMessage('Search cancelled.');
+    setTimeout(() => setMessage(null), 3000);
   }, []);
 
   const sortedResults = useMemo(() => {
+    const sorted = [...results];
     if (activeTab === 'score') {
-      return [...results].sort((a, b) => b.score - a.score);
+      return sorted.sort((a, b) => b.score - a.score);
+    } else {
+      return sorted.sort((a, b) => b.len - a.len || b.score - a.score);
     }
-    return [...results].sort((a, b) => b.len - a.len || b.score - a.score);
   }, [results, activeTab]);
 
   const { topN } = settings;
