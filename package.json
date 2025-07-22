@@ -49,5 +49,10 @@
   },
   "devDependencies": {
     "worker-loader": "^3.0.8"
+  },
+  "jest": {
+    "moduleNameMapper": {
+      "worker-loader!./search.worker": "<rootDir>/src/__mocks__/workerMock.js"
+    }
   }
 }
