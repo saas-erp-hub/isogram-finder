@@ -46,7 +46,10 @@ export type WorkerMessage = {
 
 // --- GLOBAL STATE for the worker ---
 let isSearching = false;
-let allSolutions: Solution[] = [];
+let solutionsFound = 0;
+let topByScore: Solution[] = [];
+let topByLength: Solution[] = [];
+
 let progressState: ProgressState = {
   longest: null,
   bestScore: null,
@@ -135,6 +138,20 @@ const computeScore = (combo: IsogramEntry[]): number => {
   return score;
 };
 
+const sendUpdate = (settings: SearchSettings) => {
+    const combined = new Map<string, Solution>();
+    for (const s of topByScore) combined.set(s.words.map(w => w.word).join(''), s);
+    for (const s of topByLength) combined.set(s.words.map(w => w.word).join(''), s);
+
+    if (combined.size > 0) {
+        postMessage({ type: 'solution', payload: Array.from(combined.values()) });
+        if (!hasSentFirstSolutions) {
+            hasSentFirstSolutions = true;
+        }
+    }
+    lastSolutionUpdate = Date.now();
+}
+
 // --- CORE BACKTRACKING ALGORITHM ---
 
 const backtrack = (
@@ -157,14 +174,7 @@ const backtrack = (
   // Two-stage solution throttling
   const solutionThrottle = hasSentFirstSolutions ? REGULAR_SOLUTION_THROTTLE_MS : INITIAL_SOLUTION_THROTTLE_MS;
   if (now - lastSolutionUpdate > solutionThrottle) {
-      // Send a copy of all solutions found so far. The main thread will handle sorting and slicing.
-      if (allSolutions.length > 0) {
-        postMessage({ type: 'solution', payload: [...allSolutions] });
-        lastSolutionUpdate = now;
-        if (!hasSentFirstSolutions) {
-          hasSentFirstSolutions = true;
-        }
-      }
+      sendUpdate(settings);
   }
 
 
@@ -173,15 +183,35 @@ const backtrack = (
     const score = computeScore(currentCombo);
     const candidate: Solution = { words: [...currentCombo], len: currentLen, score };
 
-    allSolutions.push(candidate);
-    progressState.solutionsFound = allSolutions.length;
+    solutionsFound++;
+    progressState.solutionsFound = solutionsFound;
 
-    // Update best/longest trackers
+    // Update best/longest trackers for progress display
     if (!progressState.longest || candidate.len > progressState.longest.len) {
       progressState.longest = candidate;
     }
     if (!progressState.bestScore || candidate.score > progressState.bestScore.score) {
       progressState.bestScore = candidate;
+    }
+
+    // Add to top lists if it qualifies
+    if (settings.topN > 0) {
+        // Top by Score
+        if (topByScore.length < settings.topN || candidate.score > topByScore[topByScore.length - 1].score) {
+            topByScore.push(candidate);
+            topByScore.sort((a, b) => b.score - a.score);
+            if (topByScore.length > settings.topN) topByScore.pop();
+        }
+        // Top by Length
+        if (topByLength.length < settings.topN || candidate.len > topByLength[topByLength.length - 1].len) {
+            topByLength.push(candidate);
+            topByLength.sort((a, b) => b.len - a.len || b.score - a.score);
+            if (topByLength.length > settings.topN) topByLength.pop();
+        }
+    } else {
+        // If topN is 0, we collect all solutions (though this can be memory intensive)
+        topByScore.push(candidate);
+        topByLength.push(candidate);
     }
   }
 
@@ -224,7 +254,9 @@ const performSearch = (wordList: string, settings: SearchSettings) => {
   try {
     // 1. Reset state
     isSearching = true;
-    allSolutions = [];
+    solutionsFound = 0;
+    topByScore = [];
+    topByLength = [];
     progressState = {
       longest: null,
       bestScore: null,
@@ -275,9 +307,14 @@ const performSearch = (wordList: string, settings: SearchSettings) => {
 
     // 4. Final sort and send results
     if (isSearching) { // Check if it wasn't cancelled
-      allSolutions.sort((a, b) => b.score - a.score || b.len - a.len);
-      const finalResults = settings.topN > 0 ? allSolutions.slice(0, settings.topN) : allSolutions;
-      postMessage({ type: 'done', payload: finalResults });
+        const combined = new Map<string, Solution>();
+        // If topN was 0, the lists might be huge. Sort them once here.
+        if (settings.topN === 0) {
+            topByScore.sort((a, b) => b.score - a.score);
+        }
+        for (const s of topByScore) combined.set(s.words.map(w => w.word).join(''), s);
+        for (const s of topByLength) combined.set(s.words.map(w => w.word).join(''), s);
+        postMessage({ type: 'done', payload: Array.from(combined.values()) });
     }
   } catch (e: any) {
     postMessage({ type: 'error', payload: { message: e.message } });
