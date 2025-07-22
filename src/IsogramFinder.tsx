@@ -1,102 +1,23 @@
-import { useState, useMemo, useCallback, FC, useRef } from 'react';
+import { useState, useMemo, useCallback, FC, useRef, useEffect } from 'react';
 import { FileText, Settings, Cpu, ListOrdered, Star, AlertCircle, Wand2, X } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import workerLoader from './worker-loader';
+import type { Solution, ProgressState, SearchSettings, WorkerMessage } from './search.worker';
 
 // --- UTILITY: Combining Tailwind classes safely ---
 function cn(...inputs: any[]) {
   return twMerge(clsx(inputs));
 }
 
-// --- TYPES & INTERFACES ---
-type IsogramEntry = {
-  word: string;
-  length: number;
-  chars: Set<string>;
-  prefix2: string;
-  prefix3: string;
-  suffix2: string;
-  suffix3: string;
-};
-
-type Solution = {
-  words: IsogramEntry[];
-  len: number;
-  score: number;
-};
-
-type ProgressState = {
-  longest: Solution | null;
-  bestScore: Solution | null;
-  solutionsFound: number;
-  wordsScanned: number;
-};
-
-type SearchSettings = {
-  minLen: number;
-  maxLen: number;
-  topN: number;
-  searchMode: 'classic' | 'split';
-  startSize: number;
-  fillSize: number;
-};
-
 // --- CORE LOGIC (Exported for testing) ---
-
+// These functions are now only used for UI preparation/display, not for the core search.
 export const getUtf8Slice = (word: string, n: number, fromEnd = false): string => {
   const chars = [...word];
   if (fromEnd) {
     return chars.slice(Math.max(0, chars.length - n)).join('');
   }
   return chars.slice(0, n).join('');
-};
-
-export const SUFFIXES = [
-    "ung", "keit", "heit", "schaft", "tum", "ion", "ismus", "ist", "ling", "erei",
-    "ler", "ner", "chen", "lein", "nis", "sal", "in", "enz", "anz", "or", "ör", "ität", "ment", "age", "ur",
-    "tät", "ik", "loge", "iker", "graph", "gramm", "tion", "eur", "eurin", "euren", "ation",
-    "logie", "phie", "är", "ärin", "ärchen", "sel", "er", "erin"
-];
-export const PREFIXES = [
-    "un", "ver", "be", "ent", "er", "ab", "auf", "aus", "an", "ein", "mit", "nach",
-    "über", "um", "unter", "vor", "wider", "zer", "zurück", "zu", "bei", "fort",
-    "gegen", "her", "hin", "los", "miss", "wieder", "ur", "voll", "zwischen",
-    "durch", "ober", "nieder", "heim", "fern", "manch", "viel", "wenig", "hoch",
-    "fehl", "ge", "trans", "auto", "anti", "ex", "prä", "post", "sub", "super",
-    "inter", "infra", "hyper", "para", "mono", "poly", "tri", "multi", "bi", "semi",
-    "ko", "kontra", "re", "pseudo", "quasi", "neo", "sozio"
-];
-export const LINKING_ELEMENTS = [
-    "s", "es", "n", "en", "er", "e"
-];
-
-export const computeScore = (combo: IsogramEntry[]): number => {
-  let score = 0.0;
-  for (let i = 0; i < combo.length; ++i) {
-    const w = combo[i];
-    score += Math.pow(w.length, 1.3);
-    if (w.length >= 8) score += 5;
-    if (w.length <= 3) score -= 3;
-    if (i > 0) {
-      const prev = combo[i - 1];
-      if (prev.suffix2 === w.prefix2) score += 3.5;
-      if (prev.suffix3 === w.prefix3) score += 5.0;
-      if (SUFFIXES.some(suf => prev.suffix3.endsWith(suf) || prev.suffix2.endsWith(suf))) score += 3.0;
-      if (PREFIXES.some(pre => w.prefix3.startsWith(pre) || w.prefix2.startsWith(pre))) score += 5.0;
-      for (const linkingElement of LINKING_ELEMENTS) {
-        if (prev.word.endsWith(linkingElement) && w.word.startsWith(linkingElement)) {
-          score += 4.0;
-          break;
-        }
-        else if (prev.word.endsWith(linkingElement) && linkingElement.length > 0 && w.word.startsWith(linkingElement.slice(0, w.word.length - prev.word.length + linkingElement.length))) {
-            score += 2.0;
-            break;
-        }
-      }
-    }
-  }
-  if (combo.length > 4) score -= (combo.length - 4) * 1.5;
-  return score;
 };
 
 export const isIsogram = (word: string): boolean => {
@@ -223,12 +144,49 @@ mut`
   });
   const [results, setResults] = useState<Solution[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const searchControllerRef = useRef<AbortController | null>(null);
-  const allSolutionsRef = useRef<Solution[]>([]);
+  const workerRef = useRef<Worker | null>(null);
   const [progress, setProgress] = useState<ProgressState>({ longest: null, bestScore: null, solutionsFound: 0, wordsScanned: 0 });
   const [activeTab, setActiveTab] = useState<'score' | 'length'>('score');
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const worker = workerLoader();
+    workerRef.current = worker;
+
+    worker.onmessage = (event: MessageEvent<WorkerMessage>) => {
+      const { type, payload } = event.data;
+      switch (type) {
+        case 'solution':
+          // In the new architecture, solutions are sent in batches.
+          // We replace the current results with the new batch.
+          setResults(payload as Solution[]);
+          break;
+        case 'progress':
+          setProgress(payload as ProgressState);
+          break;
+        case 'done':
+          setIsSearching(false);
+          setMessage('Search finished!');
+          // Final results are sent with the 'done' message
+          setResults(payload as Solution[]);
+          setTimeout(() => setMessage(null), 3000);
+          break;
+        case 'error':
+          setError((payload as { message: string }).message);
+          setIsSearching(false);
+          break;
+      }
+    };
+
+    // Cleanup function to terminate the worker when the component unmounts
+    return () => {
+      if (workerRef.current) {
+        workerRef.current.terminate();
+        workerRef.current = null;
+      }
+    };
+  }, []); // Empty dependency array ensures this runs only once on mount
 
   const handleSaveWordlistAs = useCallback(async () => {
     try {
@@ -297,137 +255,36 @@ mut`
     setTimeout(() => setMessage(null), 3000);
   }, [wordListInput]);
 
-  const parsedEntries = useMemo<IsogramEntry[]>(() => {
-    const lines = wordListInput.split(/\n/).map(l => l.trim()).filter(Boolean);
-    const entries: IsogramEntry[] = [];
-    for (const line of lines) {
-      const chars = [...line];
-      const uniqueChars = new Set(chars);
-      if (chars.length === uniqueChars.size) {
-        entries.push({
-          word: line,
-          length: chars.length,
-          chars: uniqueChars,
-          prefix2: getUtf8Slice(line, 2),
-          prefix3: getUtf8Slice(line, 3),
-          suffix2: getUtf8Slice(line, 2, true),
-          suffix3: getUtf8Slice(line, 3, true),
-        });
-      }
-    }
-    return entries.sort((a, b) => b.length - a.length);
+  const parsedEntriesCount = useMemo<number>(() => {
+    return wordListInput.split(/\n/).map(l => l.trim()).filter(Boolean).filter(isIsogram).length;
   }, [wordListInput]);
 
-  const handleSearch = useCallback(async () => {
-    if (isSearching) return;
+  const handleSearch = useCallback(() => {
+    if (isSearching || !workerRef.current) return;
+
     setIsSearching(true);
     setError(null);
+    setMessage(null);
     setResults([]);
     setProgress({ longest: null, bestScore: null, solutionsFound: 0, wordsScanned: 0 });
 
-    const controller = new AbortController();
-    searchControllerRef.current = controller;
-    const { signal } = controller;
-
-    const { minLen, maxLen, searchMode, startSize, fillSize } = settings;
-    allSolutionsRef.current = [];
-    let progressState: ProgressState = { longest: null, bestScore: null, solutionsFound: 0, wordsScanned: 0 };
-
-    const backtrack = async (list: IsogramEntry[], index: number, currentCombo: IsogramEntry[], currentChars: Set<string>, currentLen: number) => {
-      if (signal.aborted) return;
-
-      if (progressState.wordsScanned++ % 5000 === 0) {
-        setProgress({ ...progressState });
-        const currentSortedResults = [...allSolutionsRef.current].sort((a, b) => b.score - a.score || b.len - a.len);
-        setResults(currentSortedResults.slice(0, settings.topN));
-        await new Promise(resolve => setTimeout(resolve, 0));
-      }
-
-      if (currentCombo.length > 0 && currentLen >= minLen && (maxLen === 0 || currentLen <= maxLen)) {
-        const score = computeScore(currentCombo);
-        const candidate: Solution = { words: [...currentCombo], len: currentLen, score };
-
-        allSolutionsRef.current.push(candidate);
-
-        const currentSortedResults = [...allSolutionsRef.current].sort((a, b) => b.score - a.score || b.len - a.len);
-        setResults(currentSortedResults.slice(0, settings.topN));
-
-        if (progressState.wordsScanned % 5000 === 0) {
-          setProgress({ ...progressState });
-          await new Promise(resolve => setTimeout(resolve, 0));
-        }
-
-        if (!progressState.longest || candidate.len > progressState.longest.len) {
-          progressState.longest = candidate;
-        }
-        if (!progressState.bestScore || candidate.score > progressState.bestScore.score) {
-          progressState.bestScore = candidate;
-        }
-        progressState.solutionsFound = allSolutionsRef.current.length;
-      }
-
-      if (maxLen > 0 && currentLen >= maxLen) return;
-
-      for (let i = index; i < list.length; i++) {
-        if (signal.aborted) return;
-
-        const nextWord = list[i];
-        let hasConflict = false;
-        for (const char of nextWord.chars) {
-          if (currentChars.has(char)) {
-            hasConflict = true;
-            break;
-          }
-        }
-
-        if (!hasConflict) {
-          currentCombo.push(nextWord);
-          for (const char of nextWord.chars) currentChars.add(char);
-          progressState.wordsScanned++;
-          await backtrack(list, i + 1, currentCombo, currentChars, currentLen + nextWord.length);
-          for (const char of nextWord.chars) currentChars.delete(char);
-          currentCombo.pop();
-        }
-      }
-    };
-
-    try {
-      if (searchMode === 'classic') {
-        await backtrack(parsedEntries, 0, [], new Set(), 0);
-      } else {
-        const startEntries = parsedEntries.slice(0, Math.min(startSize, parsedEntries.length));
-        const fillEntries = parsedEntries.slice(0, Math.min(fillSize, parsedEntries.length));
-
-        for (const startWord of startEntries) {
-          if (signal.aborted) break;
-          const initialCombo = [startWord];
-          const initialChars = new Set(startWord.chars);
-          const initialLen = startWord.length;
-          await backtrack(fillEntries, 0, initialCombo, initialChars, initialLen);
-        }
-      }
-    } catch (e) {
-      if (signal.aborted) {
-        setMessage('Search cancelled.');
-      } else {
-        setError(e instanceof Error ? e.message : 'An unknown error occurred.');
-      }
-    } finally {
-      const finalSortedResults = [...allSolutionsRef.current].sort((a, b) => b.score - a.score || b.len - a.len);
-      setResults(finalSortedResults.slice(0, settings.topN));
-      setIsSearching(false);
-      searchControllerRef.current = null;
-    }
-  }, [isSearching, settings, parsedEntries]);
+    workerRef.current.postMessage({
+      type: 'start-search',
+      payload: {
+        wordList: wordListInput,
+        settings: settings,
+      },
+    });
+  }, [isSearching, wordListInput, settings]);
 
   const handleCancelSearch = useCallback(() => {
-    if (searchControllerRef.current) {
-      searchControllerRef.current.abort();
-    }
+    if (!isSearching || !workerRef.current) return;
+
+    workerRef.current.postMessage({ type: 'cancel-search' });
     setIsSearching(false);
-    setMessage('Search cancelled.');
+    setMessage('Search cancelled by user.');
     setTimeout(() => setMessage(null), 3000);
-  }, []);
+  }, [isSearching]);
 
   const sortedResults = useMemo(() => {
     const sorted = [...results];
@@ -467,7 +324,7 @@ mut`
                 placeholder="Donaudampfschiff...\nHeizöl...\nBoxkampf..."
               />
               <div className="flex justify-between items-center mt-2">
-                <p className="text-xs text-indigo-500">Loaded {parsedEntries.length} valid isograms.</p>
+                <p className="text-xs text-indigo-500">Loaded {parsedEntriesCount} valid isograms.</p>
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={handleSaveWordlistAs}
@@ -528,7 +385,7 @@ mut`
                   {!isSearching ? (
                     <button
                       onClick={handleSearch}
-                      disabled={parsedEntries.length === 0}
+                      disabled={parsedEntriesCount === 0}
                       className="w-full flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                       <Wand2 className="w-5 h-5 mr-3" />
