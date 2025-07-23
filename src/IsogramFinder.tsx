@@ -81,9 +81,65 @@ const SolutionCard: FC<{ solution: Solution; rank: number }> = ({ solution, rank
   </div>
 );
 
-const IsogramFinderPage: FC = () => {
-  const [wordListInput, setWordListInput] = useState(
-    `haus
+const DEFAULT_GERMAN_WORDLIST = `a
+b
+c
+d
+e
+f
+g
+h
+i
+j
+k
+l
+m
+n
+o
+p
+q
+r
+s
+t
+u
+v
+w
+x
+y
+z
+
+qual
+jux
+quiz
+typ
+gym
+job
+chef
+mut
+
+musik
+leben
+licht
+blume
+wolke
+regen
+wind
+stern
+mond
+sonne
+fluss
+berg
+wald
+wiese
+feld
+strand
+insel
+meer
+see
+land
+stadt
+dorf
+haus
 baum
 katze
 hund
@@ -125,15 +181,77 @@ wal
 delfin
 haifisch
 krake
-qual
-jux
-quiz
-typ
-gym
-job
-chef
-mut`
-  );
+`;
+
+const DEFAULT_ENGLISH_WORDLIST = `a
+b
+c
+d
+e
+f
+g
+h
+i
+j
+k
+l
+m
+n
+o
+p
+q
+r
+s
+t
+u
+v
+w
+x
+y
+z
+
+ambidextrous
+uncopyrightable
+subdermatoglyphic
+hydroxyde
+floccinaucinihilipilification
+strengths
+rhythms
+lynx
+jinx
+quartz
+boxcar
+blacksmith
+bricklayer
+carpenter
+dentist
+engineer
+fireman
+gardener
+handyman
+inspector
+jeweler
+knight
+lawyer
+manager
+nurse
+officer
+painter
+quarterback
+reporter
+sailor
+teacher
+umbrella
+violinist
+watchmaker
+xylophone
+yachtsman
+zeppelin
+`;
+
+const IsogramFinderPage: FC = () => {
+  const [selectedLanguage, setSelectedLanguage] = useState<'de' | 'en'>('de'); // New state for language selection
+  const [wordListInput, setWordListInput] = useState(DEFAULT_GERMAN_WORDLIST);
   const [settings, setSettings] = useState<SearchSettings>({
     minLen: 10,
     maxLen: 0,
@@ -161,6 +279,13 @@ mut`
 
     const worker = workerLoader();
     workerRef.current = worker;
+
+    // Update wordlist when language changes
+    if (selectedLanguage === 'de') {
+      setWordListInput(DEFAULT_GERMAN_WORDLIST);
+    } else {
+      setWordListInput(DEFAULT_ENGLISH_WORDLIST);
+    }
 
     worker.onmessage = (event: MessageEvent<WorkerMessage>) => {
       const { type, payload } = event.data;
@@ -194,7 +319,7 @@ mut`
         workerRef.current = null;
       }
     };
-  }, []); // Empty dependency array ensures this runs only once on mount
+  }, [selectedLanguage]); // Add selectedLanguage to dependency array
 
   const handleSaveWordlistAs = useCallback(async () => {
     try {
@@ -345,6 +470,30 @@ mut`
                 <FileText className="w-6 h-6 mr-3 text-indigo-600" />
                 Wordlist
               </h2>
+              <div className="flex justify-end mb-4">
+                <div className="inline-flex rounded-md shadow-sm" role="group">
+                  <button
+                    type="button"
+                    className={cn(
+                      "px-4 py-2 text-sm font-medium rounded-l-lg border border-gray-200",
+                      selectedLanguage === 'de' ? "bg-indigo-600 text-white" : "bg-white text-gray-900 hover:bg-gray-100"
+                    )}
+                    onClick={() => setSelectedLanguage('de')}
+                  >
+                    Deutsch
+                  </button>
+                  <button
+                    type="button"
+                    className={cn(
+                      "px-4 py-2 text-sm font-medium rounded-r-lg border border-gray-200",
+                      selectedLanguage === 'en' ? "bg-indigo-600 text-white" : "bg-white-white text-gray-900 hover:bg-gray-100"
+                    )}
+                    onClick={() => setSelectedLanguage('en')}
+                  >
+                    English
+                  </button>
+                </div>
+              </div>
               <p className="text-sm text-indigo-600 mb-3">Paste your wordlist below, one word per line. Only isograms (words with unique letters) will be used.</p>
               <textarea
                 value={wordListInput}
