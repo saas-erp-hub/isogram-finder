@@ -12,11 +12,11 @@ This project provides a simple and intuitive interface to identify isograms. You
 
 Here is the main user interface, where you can load your wordlist and configure the search.
 
-![Main application interface showing the wordlist editor and configuration panel.](public/images/screenshot-overview.png)
+![Main application interface showing the wordlist editor and configuration panel.](https://raw.githubusercontent.com/saas-erp-hub/isogram-finder/main/public/images/screenshot-overview.png)
 
 After running a search, the results are displayed on the right, sorted by score or length.
 
-![Results view showing a list of found isogram combinations with their scores and lengths.](public/images/screenshot-results.png)
+![Results view showing a list of found isogram combinations with their scores and lengths.](https://raw.githubusercontent.com/saas-erp-hub/isogram-finder/main/public/images/screenshot-results.png)
 
 ## Features
 
