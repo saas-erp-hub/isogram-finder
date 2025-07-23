@@ -63,9 +63,9 @@ To run the project locally, follow these steps:
     ```
     The project will open in your browser at `http://localhost:3000` (or a similar port).
 
-## Example Wordlist
+## Using Your Own Wordlists
 
-This repository includes `alice.txt`, a file containing all isograms found in the classic story "Alice's Adventures in Wonderland." You can use this file to test the "Load Wordlist From File" feature and see the isogram finder in action right away.
+While the application provides default wordlists, you can easily use your own text. Simply paste any text (e.g., a book, an article, or a custom list) into the wordlist area within the application. Then, click the **"Prepare Wordlist"** button. The tool will automatically process your input, extract all valid isograms (words with unique letters), and clean them up, making them ready for your search.
 
 ## Project Structure
 
