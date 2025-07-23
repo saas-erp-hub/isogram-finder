@@ -307,6 +307,15 @@ mut`
             <p className="mt-4 max-w-2xl mx-auto text-lg text-indigo-700">A web-based tool to find meaningful combinations of unique-character words.</p>
         </div>
 
+        {/* Disclaimer for generated content */}
+        <div className="relative flex items-center gap-4 bg-amber-100 border-l-4 border-amber-600 text-amber-800 p-4 rounded-r-xl mb-6">
+            <AlertCircle className="w-6 h-6 flex-shrink-0" />
+            <div className="flex-1">
+                <p className="font-bold">Wichtiger Hinweis zu generierten Inhalten</p>
+                <p className="break-words">Bitte beachten Sie: Dieses Tool kombiniert Wörter aus den von Ihnen bereitgestellten Textdateien rein algorithmisch. Die Ergebnisse werden automatisch generiert und nicht redaktionell geprüft. Es ist daher möglich, dass zufällige Wortkombinationen unbeabsichtigt anstößig, beleidigend oder unangemessen wirken können. Die Nutzung erfolgt auf eigenes Risiko.</p>
+            </div>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           {/* Left Column: Controls */}
           <div className="lg:col-span-2 space-y-8">
