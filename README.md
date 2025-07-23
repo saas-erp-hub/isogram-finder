@@ -1,5 +1,7 @@
 # Isogram Finder
 
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Open-brightgreen?style=for-the-badge)](https://isogram-finder.vercel.app)
+
 Did you know that in the 1980s, the German Language Society held a competition to find the longest German word in which no letter is repeated? The winning entry was "Heizölrückstoßabdämpfung," a completely made-up word spanning 24 unique letters with no real meaning. This fascinating quest for the perfect isogram—a word with no repeating characters—highlights the playful and creative side of language. This tool allows you to embark on your own hunt for these unique words!
 
 ## About This Project
