@@ -923,7 +923,7 @@ const IsogramFinderPage: FC = () => {
                   </button>
                 </div>
               </div>
-              <p className="text-sm text-indigo-600 mb-3">Paste your wordlist below, one word per line. Only isograms (words with unique letters) will be used.</p>
+              <p className="text-sm text-indigo-600 mb-3">Paste your text here. Use the "Prepare Wordlist" button to extract and clean isograms from your input.</p>
               <textarea
                 value={wordListInput}
                 onChange={(e) => setWordListInput(e.target.value)}
