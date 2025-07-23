@@ -140,7 +140,8 @@ mut`
     topN: 10,
     searchMode: 'classic',
     startSize: 40,
-    fillSize: 80,
+    highLowTopPercent: 20,
+    highLowBottomPercent: 30,
   });
   const [results, setResults] = useState<Solution[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -360,7 +361,7 @@ mut`
                 
                 <div>
                   <label className="text-sm font-medium text-indigo-700">Search Mode</label>
-                  <div className="mt-2 grid grid-cols-2 gap-2 rounded-lg bg-indigo-100 p-1">
+                  <div className="mt-2 grid grid-cols-3 gap-2 rounded-lg bg-indigo-100 p-1">
                     <button
                       onClick={() => setSettings(s => ({...s, searchMode: 'classic'}))}
                       className={cn(
@@ -379,8 +380,29 @@ mut`
                           : 'text-indigo-500 hover:bg-indigo-200'
                       )}
                     >Split</button>
+                    <button
+                      onClick={() => setSettings(s => ({...s, searchMode: 'high-low'}))}
+                      className={cn(
+                        'px-3 py-1.5 text-sm font-semibold rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-400',
+                        settings.searchMode === 'high-low'
+                          ? 'bg-white text-indigo-700 shadow-md'
+                          : 'text-indigo-500 hover:bg-indigo-200'
+                      )}
+                    >High-Low</button>
                   </div>
                 </div>
+
+                {settings.searchMode === 'split' && (
+                  <SettingsSlider label="Start Size" value={settings.startSize} min={10} max={200} onChange={val => setSettings(s => ({...s, startSize: val}))} help="Number of longest words to use as starting points." />
+                )}
+
+                {settings.searchMode === 'high-low' && (
+                  <>
+                    <SettingsSlider label="Top Words %" value={settings.highLowTopPercent} min={5} max={50} onChange={val => setSettings(s => ({...s, highLowTopPercent: val}))} unit="%" help="Use the longest x% of words." />
+                    <SettingsSlider label="Bottom Words %" value={settings.highLowBottomPercent} min={5} max={50} onChange={val => setSettings(s => ({...s, highLowBottomPercent: val}))} unit="%" help="Combine with the shortest x% of words (min 4 chars)." />
+                  </>
+                )}
+
                 <div className="mt-6">
                   {!isSearching ? (
                     <button

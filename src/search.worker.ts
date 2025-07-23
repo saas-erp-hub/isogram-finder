@@ -1,5 +1,3 @@
-
-
 // This is the main logic for the Isogram Finder, designed to run in a Web Worker.
 // It's a self-contained script with no direct access to the DOM or the main React app.
 
@@ -32,9 +30,10 @@ export type SearchSettings = {
   minLen: number;
   maxLen: number;
   topN: number;
-  searchMode: 'classic' | 'split';
-  startSize: number;
-  fillSize: number;
+  searchMode: 'classic' | 'split' | 'high-low';
+  startSize: number; // For 'split' mode
+  highLowTopPercent: number; // For 'high-low' mode
+  highLowBottomPercent: number; // For 'high-low' mode
 };
 
 // --- MESSAGE STRUCTURE for communication between worker and main thread ---
@@ -65,6 +64,7 @@ let hasSentFirstSolutions = false;
 const PROGRESS_THROTTLE_MS = 100; // Send progress updates at most every 100ms
 const INITIAL_SOLUTION_THROTTLE_MS = 500; // First update after 500ms
 const REGULAR_SOLUTION_THROTTLE_MS = 3000; // Subsequent updates every 3s
+const MIN_WORD_LEN_FOR_HIGH_LOW = 4; // For high-low mode, ignore words shorter than this
 
 // --- HELPER FUNCTIONS ---
 
@@ -138,7 +138,7 @@ const computeScore = (combo: IsogramEntry[]): number => {
   return score;
 };
 
-const sendUpdate = (settings: SearchSettings) => {
+const sendUpdate = () => {
     const combined = new Map<string, Solution>();
     for (const s of topByScore) combined.set(s.words.map(w => w.word).join(''), s);
     for (const s of topByLength) combined.set(s.words.map(w => w.word).join(''), s);
@@ -174,7 +174,7 @@ const backtrack = (
   // Two-stage solution throttling
   const solutionThrottle = hasSentFirstSolutions ? REGULAR_SOLUTION_THROTTLE_MS : INITIAL_SOLUTION_THROTTLE_MS;
   if (now - lastSolutionUpdate > solutionThrottle) {
-      sendUpdate(settings);
+      sendUpdate();
   }
 
 
@@ -289,20 +289,43 @@ const performSearch = (wordList: string, settings: SearchSettings) => {
       suffix3: getUtf8Slice(line, 3, true),
     })).sort((a, b) => b.length - a.length);
 
-    // 3. Run backtracking algorithm
+    // 3. Run backtracking algorithm based on selected mode
     if (settings.searchMode === 'classic') {
       backtrack(parsedEntries, 0, [], new Set(), 0, settings);
-    } else {
+    } else if (settings.searchMode === 'split') {
+      // Corrected 'split' mode logic:
+      // Iterate through the top 'startSize' words as starting points.
       const startEntries = parsedEntries.slice(0, Math.min(settings.startSize, parsedEntries.length));
-      const fillEntries = parsedEntries.slice(0, Math.min(settings.fillSize, parsedEntries.length));
 
-      for (const startWord of startEntries) {
+      for (let i = 0; i < startEntries.length; i++) {
         if (!isSearching) break;
+        const startWord = startEntries[i];
         const initialCombo = [startWord];
         const initialChars = new Set(startWord.chars);
         const initialLen = startWord.length;
-        backtrack(fillEntries, 0, initialCombo, initialChars, initialLen, settings);
+        
+        // For each start word, run a backtrack search on the *rest* of the main list
+        // to avoid duplicate combinations and ensure correctness.
+        backtrack(parsedEntries, i + 1, initialCombo, initialChars, initialLen, settings);
       }
+    } else if (settings.searchMode === 'high-low') {
+        const topCount = Math.floor(parsedEntries.length * (settings.highLowTopPercent / 100));
+        const bottomCount = Math.floor(parsedEntries.length * (settings.highLowBottomPercent / 100));
+
+        const topWords = parsedEntries.slice(0, topCount);
+        
+        // For bottom words, we reverse the list to get the shortest, then filter by min length
+        const bottomWords = parsedEntries.slice().reverse()
+            .filter(w => w.length >= MIN_WORD_LEN_FOR_HIGH_LOW)
+            .slice(0, bottomCount);
+
+        const highLowList = [...topWords, ...bottomWords]
+            // Remove duplicates in case of overlap
+            .filter((word, index, self) => self.findIndex(w => w.word === word.word) === index)
+            // Re-sort by length, as backtrack expects it
+            .sort((a, b) => b.length - a.length);
+        
+        backtrack(highLowList, 0, [], new Set(), 0, settings);
     }
 
     // 4. Final sort and send results

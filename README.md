@@ -6,20 +6,35 @@ Did you know that in the 1980s, the German Language Society held a competition t
 
 This project provides a simple and intuitive interface to identify isograms. You can upload a text file, and the tool will display all the isograms found within it.
 
+## Screenshots
+
+Here is the main user interface, where you can load your wordlist and configure the search.
+
+![Main application interface showing the wordlist editor and configuration panel.](public/images/screenshot-overview.png)
+
+After running a search, the results are displayed on the right, sorted by score or length.
+
+![Results view showing a list of found isogram combinations with their scores and lengths.](public/images/screenshot-results.png)
+
 ## Features
 
-*   **Isogram Detection:** Identifies words that do not have repeating letters.
-*   **File Upload:** Supports uploading text files (`.txt`) to search for isograms.
-*   **Clear Results:** Displays the found isograms in a clean and readable list.
-*   **Web-based:** Runs directly in the browser, no installation required.
+*   **Advanced Isogram Search:** Finds combinations of isograms that together form a longer isogram.
+*   **Multiple Search Modes:** Offers different algorithms to find results, from brute-force to smart heuristics.
+*   **Sophisticated Scoring:** Ranks results not just by length, but by a score that considers word length and linguistic patterns.
+*   **File Management:** Supports uploading and saving wordlists directly from the browser.
+*   **Web-based & Performant:** Runs entirely in your browser, using a Web Worker to keep the UI responsive during intensive searches.
 
 ## How It Works
 
-The application reads a text file provided by the user, splits the content into words, and then checks each word to see if it's an isogram. A word is identified as an isogram if it contains no repeating letters. The results are then displayed to the user.
+The application reads a text file provided by the user, cleans the list to keep only valid isograms, and then uses a backtracking algorithm to find combinations of these words that don't share any letters.
 
-## Screenshots
+### Search Modes
 
-*(Please add screenshots of your application here. You can create a `public/images` folder for them, similar to the reference project.)*
+You can choose between three different search algorithms:
+
+*   **Classic:** The most thorough mode. It attempts to combine every word with every other valid word in the list. This guarantees finding the best possible results but can be very slow with large wordlists.
+*   **Split:** A performance-optimized mode. It uses only a user-defined number of the longest words from your list as starting points for the search. This is much faster and is based on the assumption that the longest combinations will likely start with the longest words.
+*   **High-Low:** A creative mode that searches for combinations by mixing the longest words with the shortest words (minimum 4 characters) from your list. This can uncover interesting results that other modes might miss.
 
 ## Setup and Usage
 
@@ -48,17 +63,11 @@ This repository includes `alice.txt`, a file containing all isograms found in th
 
 ## Project Structure
 
-*   `src/IsogramFinder.tsx`: Contains the core logic for finding and displaying isograms.
+*   `src/IsogramFinder.tsx`: The main React component for the user interface.
+*   `src/search.worker.ts`: The Web Worker containing the core search and scoring logic.
 *   `src/App.tsx`: The main application component.
 *   `public/index.html`: The main HTML file for the application.
 *   `package.json`: Defines project metadata and dependencies.
-
-## Future Improvements
-
-*   Support for different languages and character sets.
-*   Option to ignore case sensitivity.
-*   Displaying statistics about the found isograms (e.g., longest isogram, number of isograms found).
-*   Export options for the list of isograms.
 
 ## License
 
@@ -66,7 +75,7 @@ This project is licensed under the MIT License. See the `LICENSE` file for more 
 
 ## Contact
 
-For questions or feedback, please contact bytebuilder@users.noreply.github.com.
+For questions or feedback, please contact [EMAIL].
 
 ## Acknowledgements
 
