@@ -179,9 +179,6 @@ kobalt
 mangan
 silizium
 bor
-kohlenstoff
-stickstoff
-sauerstoff
 fluor
 neon
 natrium
@@ -211,8 +208,6 @@ technetium
 ruthenium
 rhodium
 palladium
-silber
-cadmium
 indium
 zinn
 antimon
@@ -243,7 +238,6 @@ rhenium
 osmium
 iridium
 platin
-gold
 quecksilber
 thallium
 bismut
@@ -283,7 +277,6 @@ livermorium
 tennessine
 oganesson
 heizölrückstoßabdämpfung
-donaudampfschifffahrtsgesellschaft
 rechtschreibreform
 wissenschaft
 unabhängig
@@ -388,7 +381,6 @@ cat
 tree
 house
 forest
-mountain
 river
 wind
 rain
@@ -501,8 +493,6 @@ technetium
 ruthenium
 rhodium
 palladium
-silver
-cadmium
 indium
 tin
 antimony
@@ -533,7 +523,6 @@ rhenium
 osmium
 iridium
 platinum
-gold
 mercury
 thallium
 bismuth
@@ -941,7 +930,7 @@ const IsogramFinderPage: FC = () => {
                 disabled={isSearching}
                 rows={12}
                 className="w-full p-3 border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200 disabled:bg-indigo-100 disabled:cursor-not-allowed resize-none text-indigo-900 font-medium"
-                placeholder="Donaudampfschiff...\nHeizöl...\nBoxkampf..."
+                placeholder="Paste your text here. Use 'Prepare Wordlist' to extract isograms."
               />
               <div className="flex justify-between items-center mt-2">
                 <p className="text-xs text-indigo-500">Loaded {parsedEntriesCount} valid isograms.</p>
