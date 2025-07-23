@@ -150,8 +150,15 @@ mut`
   const [activeTab, setActiveTab] = useState<'score' | 'length'>('score');
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [showDisclaimer, setShowDisclaimer] = useState(true); // Initial state
 
   useEffect(() => {
+    // Check localStorage for disclaimer dismissal
+    const dismissed = localStorage.getItem('disclaimerDismissed');
+    if (dismissed === 'true') {
+      setShowDisclaimer(false);
+    }
+
     const worker = workerLoader();
     workerRef.current = worker;
 
@@ -287,6 +294,11 @@ mut`
     setTimeout(() => setMessage(null), 3000);
   }, [isSearching]);
 
+  const handleDismissDisclaimer = useCallback(() => {
+    setShowDisclaimer(false);
+    localStorage.setItem('disclaimerDismissed', 'true');
+  }, []);
+
   const sortedResults = useMemo(() => {
     const sorted = [...results];
     if (activeTab === 'score') {
@@ -308,13 +320,22 @@ mut`
         </div>
 
         {/* Disclaimer for generated content */}
-        <div className="relative flex items-center gap-4 bg-amber-100 border-l-4 border-amber-600 text-amber-800 p-4 rounded-r-xl mb-6">
-            <AlertCircle className="w-6 h-6 flex-shrink-0" />
-            <div className="flex-1">
-                <p className="font-bold">Wichtiger Hinweis zu generierten Inhalten</p>
-                <p className="break-words">Bitte beachten Sie: Dieses Tool kombiniert Wörter aus den von Ihnen bereitgestellten Textdateien rein algorithmisch. Die Ergebnisse werden automatisch generiert und nicht redaktionell geprüft. Es ist daher möglich, dass zufällige Wortkombinationen unbeabsichtigt anstößig, beleidigend oder unangemessen wirken können. Die Nutzung erfolgt auf eigenes Risiko.</p>
+        {showDisclaimer && (
+            <div className="relative flex items-center gap-4 bg-amber-100 border-l-4 border-amber-600 text-amber-800 p-4 rounded-r-xl mb-6">
+                <AlertCircle className="w-6 h-6 flex-shrink-0" />
+                <div className="flex-1">
+                    <p className="font-bold">Important Note on Generated Content</p>
+                    <p className="break-words">Please note: This tool algorithmically combines words from the text files you provide. The results are automatically generated and not editorially reviewed. Therefore, it is possible that random word combinations may unintentionally appear offensive, insulting, or inappropriate. Use at your own risk.</p>
+                </div>
+                <button
+                    onClick={handleDismissDisclaimer}
+                    aria-label="Dismiss disclaimer"
+                    className="text-amber-600 hover:text-amber-800 focus:outline-none focus:ring-2 focus:ring-amber-600 rounded"
+                >
+                    <X className="w-5 h-5" />
+                </button>
             </div>
-        </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           {/* Left Column: Controls */}
