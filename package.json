@@ -55,5 +55,12 @@
     "moduleNameMapper": {
       "worker-loader!./search.worker": "<rootDir>/src/__mocks__/workerMock.js"
     }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/saas-erp-hub/isogram-finder.git"
+  },
+  "bugs": {
+    "url": "https://github.com/saas-erp-hub/isogram-finder/issues"
   }
 }
