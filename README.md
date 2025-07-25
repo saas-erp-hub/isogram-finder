@@ -4,9 +4,9 @@
 
 Did you know that in the 1980s, the German Language Society held a competition to find the longest German word in which no letter is repeated? The winning entry was "Heizölrückstoßabdämpfung," a completely made-up word spanning 24 unique letters with no real meaning. This fascinating quest for the perfect isogram—a word with no repeating characters—highlights the playful and creative side of language. This tool allows you to embark on your own hunt for these unique words!
 
-### Wichtiger Hinweis zu generierten Inhalten
+### Important Note on Generated Content
 
-Bitte beachten Sie: Dieses Tool kombiniert Wörter aus den von Ihnen bereitgestellten Textdateien rein algorithmisch. Die Ergebnisse werden automatisch generiert und nicht redaktionell geprüft. Es ist daher möglich, dass zufällige Wortkombinationen unbeabsichtigt anstößig, beleidigend oder unangemessen wirken können. Die Nutzung erfolgt auf eigenes Risiko.
+Please note: This tool algorithmically combines words from the text files you provide. The results are automatically generated and not editorially reviewed. It is therefore possible that random word combinations may unintentionally appear offensive, insulting, or inappropriate. Use at your own risk.
 
 ## About This Project
 
