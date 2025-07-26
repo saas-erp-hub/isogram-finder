@@ -65,7 +65,7 @@ To run the project locally, follow these steps:
 
 ## Using Your Own Wordlists
 
-While the application provides default wordlists, you can easily use your own text. Simply paste any text (e.g., a book, an article, or a custom list) into the wordlist area within the application. Then, click the **"Prepare Wordlist"** button. The tool will automatically process your input, extract all valid isograms (words with unique letters), and clean them up, making them ready for your search. You can then save this prepared list for future use.
+While the application provides default wordlists, you can easily use your own text. Simply paste any text (e.g., a book, an article, or a custom list) into the wordlist area within the application. Then, click the **"Prepare Wordlist"** button. The tool will automatically process your input, axtract all valid isograms (words with unique letters), and clean them up, making them ready for your search. You can then save this prepared list for future use.
 
 ## Project Structure
 
@@ -81,7 +81,7 @@ This project is licensed under the MIT License. See the `LICENSE` file for more 
 
 ## Contact
 
-For questions or feedback, please contact [EMAIL].
+For questions or feedback, please [open an issue](https://github.com/saas-erp-hub/isogram-finder/issues/new).
 
 ## Acknowledgements
 
