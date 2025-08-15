@@ -66,28 +66,16 @@ const INITIAL_SOLUTION_THROTTLE_MS = 500; // First update after 500ms
 const REGULAR_SOLUTION_THROTTLE_MS = 3000; // Subsequent updates every 3s
 const MIN_WORD_LEN_FOR_HIGH_LOW = 4; // For high-low mode, ignore words shorter than this
 
+import { cleanAndCheckIsogram } from './utils/isogramUtils';
+
 // --- HELPER FUNCTIONS ---
 
-const getUtf8Slice = (word: string, n: number, fromEnd = false): string => {
+export const getUtf8Slice = (word: string, n: number, fromEnd = false): string => {
   const chars = [...word];
   if (fromEnd) {
     return chars.slice(Math.max(0, chars.length - n)).join('');
   }
   return chars.slice(0, n).join('');
-};
-
-const isIsogram = (word: string): boolean => {
-  const chars = [...word];
-  const uniqueChars = new Set(chars);
-  return chars.length === uniqueChars.size;
-};
-
-const cleanAndCheckIsogram = (word: string): string | null => {
-  const cleanedWord = word.toLowerCase().replace(/[^a-zäöüß]/g, '').trim();
-  if (cleanedWord.length > 0 && isIsogram(cleanedWord)) {
-    return cleanedWord;
-  }
-  return null;
 };
 
 const SUFFIXES = [
@@ -109,7 +97,7 @@ const LINKING_ELEMENTS = [
     "s", "es", "n", "en", "er", "e"
 ];
 
-const computeScore = (combo: IsogramEntry[]): number => {
+export const computeScore = (combo: IsogramEntry[]): number => {
   let score = 0.0;
   for (let i = 0; i < combo.length; ++i) {
     const w = combo[i];
@@ -250,7 +238,7 @@ const backtrack = (
 
 // --- MAIN SEARCH FUNCTION ---
 
-const performSearch = (wordList: string, settings: SearchSettings) => {
+export const performSearch = (wordList: string, settings: SearchSettings) => {
   try {
     // 1. Reset state
     isSearching = true;
